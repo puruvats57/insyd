@@ -1,0 +1,42 @@
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import morgan from 'morgan';
+import mongoose from 'mongoose';
+
+const PORT = process.env.PORT || 4000;
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/insyd_pdc';
+const ALLOW_ORIGIN = process.env.ALLOW_ORIGIN || 'http://localhost:3000';
+
+// Connect DB
+mongoose.set('strictQuery', true);
+mongoose
+  .connect(MONGODB_URI)
+  .then(() => console.log('MongoDB connected'))
+  .catch((err) => {
+    console.error('MongoDB connection error', err);
+    process.exit(1);
+  });
+
+// Models
+import './models/Payment.js';
+
+// Routes
+import paymentsRouter from './routes/payments.js';
+import remindersRouter from './routes/reminders.js';
+
+const app = express();
+app.use(helmet());
+app.use(cors({ origin: ALLOW_ORIGIN, credentials: true }));
+app.use(express.json({ limit: '2mb' }));
+app.use(morgan('dev'));
+
+app.get('/health', (_req, res) => res.json({ ok: true }));
+app.use('/api/payments', paymentsRouter);
+app.use('/api/reminders', remindersRouter);
+
+app.listen(PORT, () => {
+  console.log(`API listening on http://localhost:${PORT}`);
+});
+
+
