@@ -29,7 +29,32 @@ import remindersRouter from './routes/reminders.js';
 
 const app = express();
 app.use(helmet());
-app.use(cors({ origin: ALLOW_ORIGIN, credentials: true }));
+
+// CORS configuration: allow configured origin, production domain, and Vercel previews
+const allowedOrigins = [
+  ALLOW_ORIGIN,
+  'https://insyd-rho.vercel.app',
+];
+const vercelPreviewRegex = /https?:\/\/.*\.vercel\.app$/i;
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow non-browser requests (no origin) like curl/health checks
+    if (!origin) return callback(null, true);
+
+    const isAllowed = allowedOrigins.includes(origin) || vercelPreviewRegex.test(origin);
+    if (isAllowed) return callback(null, true);
+    return callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+app.use(cors(corsOptions));
+// Explicitly handle preflight
+app.options('*', cors(corsOptions));
+
 app.use(express.json({ limit: '2mb' }));
 app.use(morgan('dev'));
 
